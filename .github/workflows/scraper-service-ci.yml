@@ -38,6 +38,12 @@ concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
 
+# The scan template needs security-events: write to upload Trivy SARIF results,
+# and build needs packages: write for GHCR push
+permissions:
+  contents: read
+  security-events: write
+  packages: write
 # =============================================================================
 # Tier 1: Every Push — Fast Feedback (~2 min)
 # These run on EVERY push to ANY branch so the developer knows immediately
