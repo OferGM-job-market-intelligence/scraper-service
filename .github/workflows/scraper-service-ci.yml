@@ -1,0 +1,149 @@
+# =============================================================================
+# CI/CD Pipeline — Scraper Service (Bun.js)
+# =============================================================================
+# Thin caller workflow that inherits all CI/CD logic from the centralized
+# templates in the .github organization repo.
+#
+# Template Source: OferGM-job-market-intelligence/.github
+#
+# Trigger Strategy (three-tier):
+#   Every push (any branch) → formatAndLint + unitTests        
+#   Pull request → + codeCoverage + integrationTests + scan    
+#   Push to main → + build + deploy                            
+# =============================================================================
+
+name: CI/CD Pipeline
+
+on:
+  # ── Tier 1: Every push (fast feedback) ──────────────────────────────────
+  push:
+    branches: ["**"]  # All branches — lint & test on every push
+    paths-ignore:
+      - "**.md"
+      - "docs/**"
+      - ".gitignore"
+      - "LICENSE"
+
+  # ── Tier 2: Pull requests (quality gates) ───────────────────────────────
+  pull_request:
+    branches: [main, dev]
+    paths-ignore:
+      - "**.md"
+      - "docs/**"
+      - ".gitignore"
+      - "LICENSE"
+
+# Cancel in-progress runs for the same branch/PR to save CI minutes
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+# =============================================================================
+# Tier 1: Every Push — Fast Feedback (~2 min)
+# These run on EVERY push to ANY branch so the developer knows immediately
+# if their code has formatting or test issues.
+# =============================================================================
+jobs:
+  format-and-lint:
+    name: Format & Lint
+    uses: OferGM-job-market-intelligence/.github/.github/workflows/template-format-and-lint.yml@main
+    with:
+      language: bunjs
+      node_version: "1.3.9"
+      fail_on_warnings: false  # TODO: Set to true once codebase stabilizes
+
+  unit-tests:
+    name: Unit Tests
+    uses: OferGM-job-market-intelligence/.github/.github/workflows/template-unit-tests.yml@main
+    with:
+      language: bunjs
+      node_version: "1.3.9"
+      min_coverage: 0  # TODO: Set to 80 once tests are mature
+
+  # ===========================================================================
+  # Tier 2: Pull Requests Only — Quality Gates (~8 min)
+  # These only run when opening/updating a PR against main or develop.
+  # They are the "you shall not merge" gates.
+  # ===========================================================================
+  code-coverage:
+    name: Coverage Report
+    if: github.event_name == 'pull_request'
+    needs: [unit-tests]
+    uses: OferGM-job-market-intelligence/.github/.github/workflows/template-code-coverage.yml@main
+    with:
+      language: bunjs
+      node_version: "1.3.9"
+      min_coverage: 80
+
+  integration-tests:
+    name: Integration Tests
+    if: github.event_name == 'pull_request'
+    needs: [format-and-lint, unit-tests]
+    uses: OferGM-job-market-intelligence/.github/.github/workflows/template-integration-tests.yml@main
+    with:
+      language: bunjs
+      node_version: "1.3.9"
+      needs_kafka: true       # Scraper publishes to Kafka topic jobs.raw
+      needs_redis: true       # Scraper uses Redis for rate limiting + dedup
+      needs_mongodb: false    # Scraper doesn't talk to MongoDB directly
+      needs_elasticsearch: false
+
+  scan:
+    name: Security Scan
+    if: github.event_name == 'pull_request'
+    needs: [format-and-lint]
+    uses: OferGM-job-market-intelligence/.github/.github/workflows/template-scan.yml@main
+    with:
+      language: bunjs
+      node_version: "1.3.9"
+      scan_docker_image: false  # TODO: Enable after Dockerfile is created (~Week 3)
+      fail_on_high_severity: false  # TODO: Set to true by Week 12
+
+  # ===========================================================================
+  # Tier 3: Push to Main Only — Build & Deploy (~5 min)
+  # These only run when code is merged to main. They build the Docker image,
+  # push it to GHCR, and deploy to staging.
+  # ===========================================================================
+  build:
+    name: Build & Push Docker Image
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    needs: [format-and-lint, unit-tests]
+    uses: OferGM-job-market-intelligence/.github/.github/workflows/template-build.yml@main
+    with:
+      language: bunjs
+      node_version: "1.3.9"
+      docker_push: true
+      docker_image_name: "OferGM-job-market-intelligence/scraper-service"
+    secrets:
+      GHCR_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+  deploy-staging:
+    name: Deploy to Staging
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    needs: [build]
+    uses: OferGM-job-market-intelligence/.github/.github/workflows/template-deploy.yml@main
+    with:
+      environment: staging
+      service_name: scraper-service
+      docker_image: ${{ needs.build.outputs.docker_image }}
+      health_check_path: /health
+      health_check_timeout: 120
+    secrets:
+      KUBE_CONFIG: ${{ secrets.KUBE_CONFIG_STAGING }}
+
+  # ---------------------------------------------------------------------------
+  # Production deploy — uncomment when ready (Week 15+)
+  # ---------------------------------------------------------------------------
+  # deploy-production:
+  #   name: Deploy to Production
+  #   if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+  #   needs: [deploy-staging]
+  #   uses: OferGM-job-market-intelligence/.github/.github/workflows/template-deploy.yml@main
+  #   with:
+  #     environment: production
+  #     service_name: scraper-service
+  #     docker_image: ${{ needs.build.outputs.docker_image }}
+  #     deployment_strategy: canary
+  #     health_check_path: /health
+  #   secrets:
+  #     KUBE_CONFIG: ${{ secrets.KUBE_CONFIG_PRODUCTION }}

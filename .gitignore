@@ -5,3 +5,4 @@ bun.lockb
 *.log
 dist/
 .DS_Store
+.early.coverage
