@@ -147,3 +147,4 @@ jobs:
   #     health_check_path: /health
   #   secrets:
   #     KUBE_CONFIG: ${{ secrets.KUBE_CONFIG_PRODUCTION }}
+  
