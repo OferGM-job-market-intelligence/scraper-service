@@ -11,7 +11,12 @@
  * Retry behaviour is handled by KafkaJS internally (3 retries with backoff).
  */
 
-import { Kafka, type Producer, type ProducerRecord, CompressionTypes } from "kafkajs";
+import {
+  Kafka,
+  type Producer,
+  type ProducerRecord,
+  CompressionTypes,
+} from "kafkajs";
 import { config } from "../config/env.js";
 import { logger } from "../utils/logger.js";
 

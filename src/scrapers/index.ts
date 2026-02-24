@@ -5,7 +5,11 @@
  * The scheduler uses this to iterate over all registered scrapers.
  */
 
-export { BaseScraper, type ScraperSource, type ScrapeResult } from "./base-scraper.js";
+export {
+  BaseScraper,
+  type ScraperSource,
+  type ScrapeResult,
+} from "./base-scraper.js";
 export { LinkedInScraper } from "./linkedin-scraper.js";
 export { IndeedScraper } from "./indeed-scraper.js";
 
@@ -18,8 +22,5 @@ import { IndeedScraper } from "./indeed-scraper.js";
  * Add new scrapers here as they are implemented.
  */
 export function createAllScrapers(): BaseScraper[] {
-  return [
-    new LinkedInScraper(),
-    new IndeedScraper(),
-  ];
+  return [new LinkedInScraper(), new IndeedScraper()];
 }

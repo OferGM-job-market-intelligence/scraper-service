@@ -17,9 +17,17 @@
 
 import { config } from "./config/env.js";
 import { logger } from "./utils/logger.js";
-import { getRedisClient, disconnectRedis, isRedisHealthy } from "./redis/client.js";
+import {
+  getRedisClient,
+  disconnectRedis,
+  isRedisHealthy,
+} from "./redis/client.js";
 import { disconnectProducer } from "./kafka/producer.js";
-import { createAllScrapers, type BaseScraper, type ScrapeResult } from "./scrapers/index.js";
+import {
+  createAllScrapers,
+  type BaseScraper,
+  type ScrapeResult,
+} from "./scrapers/index.js";
 
 // ---------------------------------------------------------------------------
 // State

@@ -20,7 +20,9 @@ const envSchema = z.object({
   SCRAPE_INTERVAL: z.coerce.number().int().positive().default(3_600_000),
   MAX_REQUESTS_PER_HOUR: z.coerce.number().int().positive().default(50),
   DEDUP_TTL_SECONDS: z.coerce.number().int().positive().default(2_592_000),
-  NODE_ENV: z.enum(["development", "production", "test"]).default("development"),
+  NODE_ENV: z
+    .enum(["development", "production", "test"])
+    .default("development"),
   LOG_LEVEL: z.enum(["debug", "info", "warn", "error"]).default("info"),
   SERVICE_NAME: z.string().default("scraper-service"),
   PORT: z.coerce.number().int().positive().default(3000),

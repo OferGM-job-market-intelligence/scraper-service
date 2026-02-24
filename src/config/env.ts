@@ -34,9 +34,7 @@ const envSchema = z.object({
   NODE_ENV: z
     .enum(["development", "production", "test"])
     .default("development"),
-  LOG_LEVEL: z
-    .enum(["debug", "info", "warn", "error"])
-    .default("info"),
+  LOG_LEVEL: z.enum(["debug", "info", "warn", "error"]).default("info"),
   SERVICE_NAME: z.string().default("scraper-service"),
   PORT: z.coerce.number().int().positive().default(3000),
 });

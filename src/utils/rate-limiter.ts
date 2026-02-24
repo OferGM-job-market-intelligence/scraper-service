@@ -69,7 +69,9 @@ export class RateLimiter {
    * Returns the current count and remaining quota for a source.
    * Useful for logging / health checks.
    */
-  async getStatus(source: string): Promise<{ count: number; remaining: number }> {
+  async getStatus(
+    source: string,
+  ): Promise<{ count: number; remaining: number }> {
     const hourBucket = Math.floor(Date.now() / (this.windowSeconds * 1000));
     const key = `ratelimit:${source}:${hourBucket}`;
 
